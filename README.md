@@ -1,6 +1,7 @@
-#  Ol Chiki Transliterator
+#  Ol Chiki Transliterator 
 
 A fast and user-friendly tool to transliterate Santali text written in **Ol Chiki script** into **Latin** and **Devanagari (Hindi)** scripts. Built using Streamlit, this app helps you understand or convert Santali passages when reading Ol Chiki is still something you're learning.
+The web app is hosted on streamlit with the following link : https://olchiki-transliterator.streamlit.app/
 
 ---
 
