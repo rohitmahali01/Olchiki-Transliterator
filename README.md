@@ -45,7 +45,7 @@ It’s not about perfection — it’s about **making the process easier and fas
 
 ---
 
-## 🚀 Run it Locally
+##  Run it Locally
 
 ```bash
 pip install streamlit
