@@ -1,16 +1,10 @@
 import streamlit as st
 import time
-import re
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import html
+import requests
 
 # --- PAGE CONFIGURATION ---
-st.set_page_config(
-    page_title="Ol Chiki Transliterator",
-    layout="wide",
-    initial_sidebar_state="collapsed"
-)
+st.set_page_config(page_title="Ol Chiki Transliterator", layout="wide", initial_sidebar_state="collapsed")
 
 # --- MAPPINGS ---
 olchiki_to_latin = {
@@ -29,7 +23,7 @@ consonants = {
 }
 digits = {'᱐': '०', '᱑': '१', '᱒': '२', '᱓': '३', '᱔': '४', '᱕': '५', '᱖': '६', '᱗': '७', '᱘': '८', '᱙': '९'}
 
-# --- TRANSLITERATION LOGIC ---
+# --- TRANSLITERATION ---
 @st.cache_data
 def transliterate_to_latin(text: str) -> list[str]:
     words = text.strip().split()
@@ -40,8 +34,6 @@ def transliterate_to_devanagari(text: str) -> list[str]:
     words = text.strip().split()
     result = []
     for word in words:
-        if not word:
-            continue
         output_chars = []
         last_char_was_consonant = False
         for char in word:
@@ -63,151 +55,119 @@ def transliterate_to_devanagari(text: str) -> list[str]:
         result.append("".join(output_chars))
     return result
 
-# --- UI TOOLTIP FUNCTION ---
+# --- TOOLTIP ---
 def create_tooltip_words(words: list[str]) -> str:
     word_spans = (
-        f'<span class="tooltip">{word}<span class="tooltiptext">#{i}</span></span>'
+        f'<span class="tooltip">{html.escape(word)}<span class="tooltiptext">#{i}</span></span>'
         for i, word in enumerate(words, 1)
     )
     return f'<div class="word-container">{" ".join(word_spans)}</div>'
 
 # --- CUSTOM CSS ---
 st.markdown("""
-    <style>
-    .word-container { font-size: 1.0em; line-height: 2.0em; text-align: left; word-wrap: break-word; }
-    .tooltip {
-        position: relative; display: inline-block; cursor: pointer;
-        padding: 4px 8px; margin: 2px; border-radius: 7px;
-        transition: background-color 0.3s ease;
-    }
-    .tooltip:hover { background-color: rgba(255, 255, 255, 0.1); }
-    .tooltip .tooltiptext {
-        visibility: hidden; background-color: #1E90FF; color: #fff;
-        text-align: center; padding: 5px 10px; border-radius: 6px;
-        position: absolute; z-index: 1; bottom: 130%; left: 50%;
-        transform: translateX(-50%); opacity: 0; transition: opacity 0.3s;
-        font-size: 0.9em; white-space: nowrap;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-    }
-    .tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
-    </style>
+<style>
+.word-container { font-size: 1em; line-height: 2em; word-wrap: break-word; }
+.tooltip { position: relative; display: inline-block; cursor: pointer; padding: 4px 8px; margin: 2px; border-radius: 7px; }
+.tooltip:hover { background-color: rgba(255,255,255,0.1); }
+.tooltip .tooltiptext {
+    visibility: hidden; background-color: #1E90FF; color: #fff;
+    text-align: center; padding: 5px 10px; border-radius: 6px;
+    position: absolute; z-index: 1; bottom: 130%; left: 50%;
+    transform: translateX(-50%); opacity: 0; transition: opacity 0.3s;
+    font-size: 0.9em; white-space: nowrap;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+}
+.tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+</style>
 """, unsafe_allow_html=True)
 
-# --- PAGE TITLE ---
+# --- MAIN UI ---
 st.title("Ol Chiki Transliterator")
 
-# --- MAIN FORM ---
 with st.form(key="transliteration_form"):
-    st.subheader(" Input: Ol Chiki")
-    input_text = st.text_area(
-        "Type or paste Ol Chiki text here:",
-        height=200,
-        placeholder="ᱚᱛᱟᱲ ᱮᱥ ᱚᱞᱚ"
-    )
-    script_choice = st.radio(
-        "Choose Output Script:",
-        ["Latin", "Devanagari"],
-        horizontal=True,
-        key="script_choice"
-    )
+    st.subheader("Input: Ol Chiki")
+    input_text = st.text_area("Type or paste Ol Chiki text here:", height=200, placeholder="ᱚᱛᱟᱲ ᱮᱥ ᱚᱞᱚ")
+    script_choice = st.radio("Choose Output Script:", ["Latin", "Devanagari"], horizontal=True)
     submitted = st.form_submit_button("Transliterate")
 
-# --- PROCESSING ---
 if submitted and input_text.strip():
     olchiki_words = input_text.strip().split()
-
     with st.spinner("Transliterating..."):
-        start_time = time.time()
-        translit_words = (
-            transliterate_to_latin(input_text)
-            if script_choice == 'Latin'
-            else transliterate_to_devanagari(input_text)
-        )
-        end_time = time.time()
-
-    processing_time = (end_time - start_time) * 1000
-
+        start = time.time()
+        translit_words = transliterate_to_latin(input_text) if script_choice == "Latin" else transliterate_to_devanagari(input_text)
+        end = time.time()
+    st.success("Transliteration Complete!")
+    st.metric("Processing Time", f"{(end - start) * 1000:.2f} ms")
     st.markdown("---")
-    col_a, col_b = st.columns([3, 1])
-    with col_a:
-        st.success(" Transliteration Complete!")
-    with col_b:
-        st.metric(label="Speed", value=f"{processing_time:.2f} ms")
-
     col1, col2 = st.columns(2)
     with col1:
         st.subheader("Original (Ol Chiki)")
         st.markdown(create_tooltip_words(olchiki_words), unsafe_allow_html=True)
-
     with col2:
-        st.markdown(f"""
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <h3 style="margin-bottom: 0;">Output ({script_choice})</h3>
-                <button onclick="copyOutput()" style="padding: 6px 12px; font-size: 0.9em;"> Copy</button>
-            </div>
-            <script>
-            function copyOutput() {{
-                let text = document.getElementById('output-plain-text').innerText;
-                navigator.clipboard.writeText(text).then(() => {{
-                    console.log("Copied!");
-                }});
-            }}
-            </script>
-        """, unsafe_allow_html=True)
+        # Two-column layout: title and download button
+        col2a, col2b = st.columns([5, 1])
 
-        # Visible Output with Tooltip
+        with col2a:
+            st.subheader(f"Output ({script_choice})")
+
+        with col2b:
+            st.download_button(
+                label=" Download",
+                data=" ".join(translit_words),
+                file_name="transliteration.txt",
+                mime="text/plain",
+                use_container_width=True
+            )
+
+        # Display transliterated words below
         st.markdown(create_tooltip_words(translit_words), unsafe_allow_html=True)
-
-        # Hidden div with plain text (for clipboard copy)
-        st.markdown(f"""
-            <div id="output-plain-text" style="display: none;">{" ".join(translit_words)}</div>
-        """, unsafe_allow_html=True)
 
 
 elif submitted:
-    st.warning(" Please enter some Ol Chiki text to transliterate.")
+    st.warning("Please enter some Ol Chiki text.")
 
-# --- SECURE EMAIL USING st.secrets ---
-EMAIL_SENDER = st.secrets["EMAIL_SENDER"]
-EMAIL_RECEIVER = st.secrets["EMAIL_RECEIVER"]
-EMAIL_PASSWORD = st.secrets["EMAIL_PASSWORD"]
+# --- SENDGRID EMAIL FUNCTION ---
+def send_email_via_sendgrid(name, sender_email, feedback):
+    SENDGRID_API_KEY = st.secrets["SENDGRID_API_KEY"]
+    SENDER = st.secrets["EMAIL_SENDER"]
+    RECEIVER = st.secrets["EMAIL_RECEIVER"]
 
-def send_email(name, sender_email, message):
     subject = "Ol Chiki Transliterator Feedback"
-    body = f"Name: {name or 'Anonymous'}\nEmail: {sender_email or 'Not provided'}\n\nFeedback:\n{message}"
+    content = f"Name: {name or 'Anonymous'}\nEmail: {sender_email or 'Not provided'}\n\nFeedback:\n{feedback}"
+    headers = {
+        "Authorization": f"Bearer {SENDGRID_API_KEY}",
+        "Content-Type": "application/json"
+    }
+    data = {
+        "personalizations": [{"to": [{"email": RECEIVER}]}],
+        "from": {"email": SENDER},
+        "subject": subject,
+        "content": [{"type": "text/plain", "value": content}]
+    }
+    response = requests.post("https://api.sendgrid.com/v3/mail/send", headers=headers, json=data)
+    return response.status_code == 202
 
-    msg = MIMEMultipart()
-    msg["From"] = EMAIL_SENDER
-    msg["To"] = EMAIL_RECEIVER
-    msg["Subject"] = subject
-    msg.attach(MIMEText(body, "plain"))
+# --- FEEDBACK FORM WITH RATE LIMITING ---
+st.markdown("###  Feedback")
+with st.expander("Send Feedback"):
+    if "last_feedback_time" not in st.session_state:
+        st.session_state.last_feedback_time = 0
 
-    try:
-        server = smtplib.SMTP("smtp.gmail.com", 587)
-        server.starttls()
-        server.login(EMAIL_SENDER, EMAIL_PASSWORD)
-        server.send_message(msg)
-        server.quit()
-        return True
-    except Exception as e:
-        print(f"Email failed: {e}")
-        return False
-
-# --- FEEDBACK FORM ---
-with st.expander(" Send Feedback (Click to Expand)", expanded=False):
     with st.form("feedback_form"):
-        st.write("Want to suggest an improvement or feature? Send your feedback.")
-        name = st.text_input("Name (optional):")
-        user_email = st.text_input("Your Email (optional):")
-        feedback = st.text_area("Your Feedback:", height=150)
-        send = st.form_submit_button(" Send Feedback")
+        name = st.text_input("Name (optional)")
+        user_email = st.text_input("Email (optional)")
+        feedback = st.text_area("Your Feedback", height=150)
+        submit = st.form_submit_button("Send")
 
-        if send:
-            if feedback.strip():
-                success = send_email(name, user_email, feedback)
-                if success:
-                    st.success(" Feedback sent successfully!")
+        if submit:
+            current_time = time.time()
+            if current_time - st.session_state.last_feedback_time < 60:
+                st.warning("Please wait a minute before sending feedback again.")
+            elif feedback.strip():
+                if send_email_via_sendgrid(name, user_email, feedback):
+                    st.session_state.last_feedback_time = current_time
+                    st.success("Feedback sent successfully.")
                 else:
-                    st.error(" Failed to send feedback. Please try again later.")
+                    st.error("Failed to send feedback. Try again later.")
             else:
-                st.warning(" Feedback field cannot be empty.")
+                st.warning("Feedback cannot be empty.")
