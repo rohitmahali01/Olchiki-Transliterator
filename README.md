@@ -41,7 +41,7 @@ Still, it’s a **very helpful companion** for many real-world tasks.
 For example:  
 > A Santali Wikipedian can use Google Translate to convert an English paragraph into Ol Chiki, paste it here to see the Latin or Hindi transliteration, then **proofread and edit it** before publishing it on the **Santali Wikipedia**.
 
-It’s not about perfection — it’s about **making the process easier and faster**.
+It’s not meant to replace human expertise — but to **support and make the process easier and faster**, especially in building and refining ASR datasets or open content.
 
 ---
 
