@@ -4,7 +4,155 @@ import html
 import requests
 
 # --- PAGE CONFIGURATION ---
-st.set_page_config(page_title="Ol Chiki Transliterator", layout="wide", initial_sidebar_state="collapsed")
+st.set_page_config(
+    page_title="Ol Chiki Transliterator",
+    layout="wide",
+    initial_sidebar_state="collapsed"
+)
+
+# --- THEME & GLOBAL STYLES (Dark palette aligned to screenshot) ---
+st.markdown("""
+<style>
+:root {
+  --bg: #0b0c0e;           /* app background (near black) */
+  --panel: #15171b;        /* card / form background */
+  --panel-2: #1b1e24;      /* input background */
+  --border: #262a33;       /* subtle borders */
+  --text: #e8eef5;         /* primary text */
+  --muted: #aab3bf;        /* secondary text */
+  --accent: #1E90FF;       /* cyan-blue accent (buttons, links) */
+  --accent-2: #39a4ff;     /* hover */
+  --success: #19c37d;
+  --warning: #f5a524;
+  --error: #ef4444;
+}
+
+html, body, .block-container {
+  background-color: var(--bg) !important;
+  color: var(--text) !important;
+}
+
+/* Remove default Streamlit max width padding look */
+.block-container {
+  padding-top: 1.2rem;
+}
+
+/* Titles */
+h1, h2, h3, h4 {
+  color: var(--text);
+  letter-spacing: 0.2px;
+}
+
+/* Horizontal rule */
+hr {
+  border: none;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 1rem 0 0.5rem 0;
+}
+
+/* Forms and panels */
+section[data-testid="stForm"] {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  padding: 1rem 1rem 0.5rem 1rem;
+  border-radius: 12px;
+}
+
+/* Text area, inputs */
+textarea, input, .stTextArea textarea, .stTextInput input {
+  background-color: var(--panel-2) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 10px !important;
+}
+textarea::placeholder, input::placeholder { color: #7c8796 !important; }
+
+/* Radio buttons */
+div[role="radiogroup"] > label {
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 6px 12px;
+  margin-right: 8px;
+}
+div[role="radiogroup"] > label:hover { border-color: var(--accent); }
+div[role="radiogroup"] input:checked + div {
+  color: var(--text);
+}
+div[role="radiogroup"] input:checked + div::before {
+  background: var(--accent) !important;
+  border-color: var(--accent) !important;
+}
+
+/* Primary buttons */
+button[kind="primary"], .stDownloadButton button, .stForm button {
+  background: var(--accent) !important;
+  color: #fff !important;
+  border: 1px solid var(--accent) !important;
+  border-radius: 10px !important;
+}
+button[kind="primary"]:hover, .stDownloadButton button:hover, .stForm button:hover {
+  background: var(--accent-2) !important;
+  border-color: var(--accent-2) !important;
+}
+
+/* Spinner color */
+.css-1y4p8pa e1nzilvr5 { color: var(--accent) !important; }
+
+/* Metric */
+[data-testid="stMetricValue"] {
+  color: var(--text) !important;
+}
+[data-testid="stMetricDelta"] {
+  color: var(--success) !important;
+}
+
+/* Expander */
+details[open] > summary, details > summary {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text);
+}
+details[open] {
+  background: var(--panel);
+}
+
+/* Word chips + tooltips */
+.word-container { font-size: 1em; line-height: 2em; word-wrap: break-word; }
+.tooltip { 
+  position: relative; display: inline-block; cursor: pointer;
+  padding: 6px 10px; margin: 2px; border-radius: 8px;
+  background: #101317; border: 1px solid var(--border); color: var(--text);
+}
+.tooltip:hover { background-color: #121720; border-color: #2b3340; }
+.tooltip .tooltiptext {
+  visibility: hidden; background-color: var(--accent); color: #fff;
+  text-align: center; padding: 6px 10px; border-radius: 8px;
+  position: absolute; z-index: 10; bottom: 130%; left: 50%;
+  transform: translateX(-50%); opacity: 0; transition: opacity 0.2s ease;
+  font-size: 0.9em; white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(0,0,0,0.35);
+}
+.tooltip:hover .tooltiptext { visibility: visible; opacity: 1; }
+
+/* Alerts */
+.stAlert { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; }
+.stAlert [data-baseweb="tag"] { border-radius: 8px; }
+
+/* Divider columns */
+.css-ocqkz7, .css-1r6slb0 { background: transparent !important; }
+
+/* Download button container width icon alignment */
+.stDownloadButton button:before {
+  content: "⬇";
+  margin-right: .5rem;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # --- MAPPINGS ---
 olchiki_to_latin = {
@@ -63,216 +211,6 @@ def create_tooltip_words(words: list[str]) -> str:
     )
     return f'<div class="word-container">{" ".join(word_spans)}</div>'
 
-# --- CUSTOM CSS WITH DARK THEME ---
-st.markdown("""
-<style>
-/* Dark theme implementation */
-.stApp {
-    background-color: #000000;
-    color: #FFFFFF;
-}
-
-/* Main content area */
-.main .block-container {
-    background-color: #000000;
-    color: #FFFFFF;
-}
-
-/* Headers styling */
-h1, h2, h3, h4, h5, h6 {
-    color: #FFFFFF !important;
-}
-
-/* Form styling */
-.stForm {
-    background-color: #1a1a1a;
-    border: 1px solid #333333;
-    border-radius: 8px;
-    padding: 20px;
-}
-
-/* Text input and textarea styling */
-.stTextInput > div > div > input,
-.stTextArea > div > div > textarea {
-    background-color: #1a1a1a !important;
-    color: #FFFFFF !important;
-    border: 1px solid #333333 !important;
-    border-radius: 4px !important;
-}
-
-.stTextInput > div > div > input:focus,
-.stTextArea > div > div > textarea:focus {
-    border-color: #FF4B4B !important;
-    box-shadow: 0 0 0 1px #FF4B4B !important;
-}
-
-/* Radio button styling */
-.stRadio > div {
-    background-color: #1a1a1a;
-    border-radius: 4px;
-    padding: 10px;
-}
-
-.stRadio label {
-    color: #FFFFFF !important;
-}
-
-/* Button styling */
-.stButton > button {
-    background-color: #FF4B4B !important;
-    color: #FFFFFF !important;
-    border: none !important;
-    border-radius: 4px !important;
-    padding: 10px 20px !important;
-    font-weight: bold !important;
-}
-
-.stButton > button:hover {
-    background-color: #FF3030 !important;
-    transform: translateY(-2px);
-    transition: all 0.3s ease;
-}
-
-/* Download button styling */
-.stDownloadButton > button {
-    background-color: #FF4B4B !important;
-    color: #FFFFFF !important;
-    border: none !important;
-    border-radius: 4px !important;
-    padding: 8px 16px !important;
-    font-size: 14px !important;
-}
-
-.stDownloadButton > button:hover {
-    background-color: #FF3030 !important;
-}
-
-/* Columns styling */
-.stColumn {
-    background-color: #000000;
-}
-
-/* Expander styling */
-.streamlit-expanderHeader {
-    background-color: #1a1a1a !important;
-    color: #FFFFFF !important;
-    border: 1px solid #333333 !important;
-}
-
-.streamlit-expanderContent {
-    background-color: #1a1a1a !important;
-    border: 1px solid #333333 !important;
-    border-top: none !important;
-}
-
-/* Metric styling */
-.metric-container {
-    background-color: #1a1a1a;
-    border: 1px solid #333333;
-    border-radius: 4px;
-    padding: 10px;
-}
-
-/* Success/Warning/Error message styling */
-.stSuccess {
-    background-color: #1a4d1a !important;
-    color: #FFFFFF !important;
-}
-
-.stWarning {
-    background-color: #4d4d1a !important;
-    color: #FFFFFF !important;
-}
-
-.stError {
-    background-color: #4d1a1a !important;
-    color: #FFFFFF !important;
-}
-
-/* Spinner styling */
-.stSpinner > div {
-    border-top-color: #FF4B4B !important;
-}
-
-/* Tooltip words styling with dark theme */
-.word-container { 
-    font-size: 1em; 
-    line-height: 2em; 
-    word-wrap: break-word; 
-    color: #FFFFFF;
-}
-
-.tooltip { 
-    position: relative; 
-    display: inline-block; 
-    cursor: pointer; 
-    padding: 4px 8px; 
-    margin: 2px; 
-    border-radius: 7px;
-    color: #FFFFFF;
-    background-color: #1a1a1a;
-    border: 1px solid #333333;
-}
-
-.tooltip:hover { 
-    background-color: #333333;
-    border-color: #FF4B4B;
-}
-
-.tooltip .tooltiptext {
-    visibility: hidden; 
-    background-color: #FF4B4B; 
-    color: #FFFFFF;
-    text-align: center; 
-    padding: 5px 10px; 
-    border-radius: 6px;
-    position: absolute; 
-    z-index: 1; 
-    bottom: 130%; 
-    left: 50%;
-    transform: translateX(-50%); 
-    opacity: 0; 
-    transition: opacity 0.3s;
-    font-size: 0.9em; 
-    white-space: nowrap;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.6);
-}
-
-.tooltip:hover .tooltiptext { 
-    visibility: visible; 
-    opacity: 1; 
-}
-
-/* Divider styling */
-hr {
-    border-color: #333333 !important;
-}
-
-/* Sidebar styling (if used) */
-.css-1d391kg {
-    background-color: #1a1a1a !important;
-}
-
-/* Custom scrollbar for dark theme */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: #1a1a1a;
-}
-
-::-webkit-scrollbar-thumb {
-    background: #333333;
-    border-radius: 4px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: #FF4B4B;
-}
-</style>
-""", unsafe_allow_html=True)
-
 # --- MAIN UI ---
 st.title("Ol Chiki Transliterator")
 
@@ -296,12 +234,9 @@ if submitted and input_text.strip():
         st.subheader("Original (Ol Chiki)")
         st.markdown(create_tooltip_words(olchiki_words), unsafe_allow_html=True)
     with col2:
-        # Two-column layout: title and download button
         col2a, col2b = st.columns([5, 1])
-
         with col2a:
             st.subheader(f"Output ({script_choice})")
-
         with col2b:
             st.download_button(
                 label=" Download",
@@ -310,10 +245,7 @@ if submitted and input_text.strip():
                 mime="text/plain",
                 use_container_width=True
             )
-
-        # Display transliterated words below
         st.markdown(create_tooltip_words(translit_words), unsafe_allow_html=True)
-
 elif submitted:
     st.warning("Please enter some Ol Chiki text.")
 
@@ -324,7 +256,7 @@ def send_email_via_sendgrid(name, sender_email, feedback):
     RECEIVER = st.secrets["EMAIL_RECEIVER"]
 
     subject = "Ol Chiki Transliterator Feedback"
-    content = f"Name: {name or 'Anonymous'}\nEmail: {sender_email or 'Not provided'}\n\nFeedback:\n{feedback}"
+    content = f"Name: {name or 'Anonymous'}\\nEmail: {sender_email or 'Not provided'}\\n\\nFeedback:\\n{feedback}"
     headers = {
         "Authorization": f"Bearer {SENDGRID_API_KEY}",
         "Content-Type": "application/json"
@@ -339,7 +271,7 @@ def send_email_via_sendgrid(name, sender_email, feedback):
     return response.status_code == 202
 
 # --- FEEDBACK FORM WITH RATE LIMITING ---
-st.markdown("### Feedback")
+st.markdown("###  Feedback")
 with st.expander("Send Feedback"):
     if "last_feedback_time" not in st.session_state:
         st.session_state.last_feedback_time = 0
